@@ -9,6 +9,27 @@ def create_request(db: Session, request: schemas.RequestCreate):
     db.refresh(db_request)
     return db_request
 
+def update_request_responsible(db: Session, request_id: int, responsible: str):
+    db_request = db.query(models.Request).filter(models.Request.id == request_id).first()
+    if db_request:
+        db_request.responsible = responsible
+        db.commit()
+        db.refresh(db_request)
+        return db_request
+    return None
+
+def complete_request(db: Session, request_id: int):
+    db_request = db.query(models.Request).filter(models.Request.id == request_id).first()
+    if db_request:
+        db_request.status = models.StatusEnum.done
+        db.commit()
+        db.refresh(db_request)
+
+        print(f"Заявка {request_id} выполнена. Статус обновлен на 'Выполнено'.")
+        return db_request
+    else:
+        return None
+
 def get_requests(db: Session):
     return db.query(models.Request).all()
 
@@ -71,3 +92,22 @@ def search_requests(db: Session, request_id: int = None, client: str = None, equ
         query = query.filter(models.Request.equipment == equipment)
 
     return query.all()
+
+def search_requests(db: Session, request_id: int = None, client: str = None, equipment: str = None):
+    query = db.query(models.Request)
+
+    if request_id:
+        query = query.filter(models.Request.id == request_id)
+    if client:
+        query = query.filter(models.Request.client == client)
+    if equipment:
+        query = query.filter(models.Request.equipment == equipment)
+
+    return query.all()
+
+def create_comment(db: Session, request_id: int, comment: schemas.CommentCreate):
+    db_comment = models.Comment(request_id=request_id, **comment.dict())
+    db.add(db_comment)
+    db.commit()
+    db.refresh(db_comment)
+    return db_comment

@@ -1,6 +1,9 @@
 import enum
-from sqlalchemy import Column, Integer, String, Date, Enum
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Date, Enum
 from .database import Base
+from datetime import datetime
+from sqlalchemy.orm import relationship
+
 
 class StatusEnum(str, enum.Enum):
     pending = "в ожидании"
@@ -19,3 +22,13 @@ class Request(Base):
     status = Column(Enum(StatusEnum))
     problem_description = Column(String)
     responsible = Column(String)
+
+class Comment(Base):
+    __tablename__ = "comments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    request_id = Column(Integer, ForeignKey("requests.id"))
+    text = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    request = relationship("Request", back_populates="comments")
