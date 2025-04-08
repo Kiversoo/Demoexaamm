@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
+from typing import List
 from . import models, schemas, crud
 from .database import engine, SessionLocal
 
@@ -44,3 +45,16 @@ def update_responsible(request_id: int, responsible: str, db: Session = Depends(
     if not db_request:
         raise HTTPException(status_code=404, detail="Request not found")
     return db_request
+
+@app.get("/requests", response_model=List[schemas.Request])
+def get_requests(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    requests = crud.get_requests(db=db, skip=skip, limit=limit)
+    return requests
+
+@app.put("/requests/{request_id}", response_model=schemas.Request)
+def update_request(request_id: int, status: schemas.StatusEnum, responsible: str = None, problem_description: str = None, db: Session = Depends(get_db)):
+    return crud.update_request_status(db=db, request_id=request_id, status=status, responsible=responsible, problem_description=problem_description)
+
+@app.get("/requests/search", response_model=List[schemas.Request])
+def search_requests(request_id: int = None, client: str = None, equipment: str = None, db: Session = Depends(get_db)):
+    return crud.search_requests(db=db, request_id=request_id, client=client, equipment=equipment)
