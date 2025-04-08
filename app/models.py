@@ -15,6 +15,7 @@ class Request(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     date_created = Column(Date)
+    ate_completed = Column(Date, nullable=True)
     equipment = Column(String)
     fault_type = Column(String)
     description = Column(String)

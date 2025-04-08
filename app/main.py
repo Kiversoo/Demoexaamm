@@ -71,3 +71,17 @@ def complete_request(request_id: int, db: Session = Depends(get_db)):
 def create_comment(request_id: int, comment: schemas.CommentCreate, db: Session = Depends(get_db)):
     return crud.create_comment(db=db, request_id=request_id, comment=comment)
 
+@app.get("/tasks/completed")
+def get_completed_tasks(db: Session = Depends(get_db)):
+    completed_tasks = crud.count_completed_tasks(db)
+    return {"completed_tasks": completed_tasks}
+
+@app.get("/tasks/average_completion_time")
+def get_average_completion_time(db: Session = Depends(get_db)):
+    avg_time = crud.average_completion_time(db)
+    return {"average_completion_time": avg_time}
+
+@app.get("/tasks/fault_type_statistics")
+def get_fault_type_statistics(db: Session = Depends(get_db)):
+    statistics = crud.fault_type_statistics(db)
+    return {"fault_type_statistics": statistics}

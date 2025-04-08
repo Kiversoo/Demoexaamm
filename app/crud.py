@@ -1,6 +1,9 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from . import models, schemas
+from datetime import datetime
+from sqlalchemy import func
+
 
 def create_request(db: Session, request: schemas.RequestCreate):
     db_request = models.Request(**request.dict())
@@ -111,3 +114,16 @@ def create_comment(db: Session, request_id: int, comment: schemas.CommentCreate)
     db.commit()
     db.refresh(db_comment)
     return db_comment
+
+def count_completed_tasks(db: Session):
+    return db.query(func.count(models.Request.id)).filter(models.Request.status == 'выполнено').scalar()
+
+def average_completion_time(db: Session):
+    result = db.query(func.avg(models.Request.date_completed - models.Request.date_created)).scalar()
+    return result.days if result else None
+
+def fault_type_statistics(db: Session):
+    result = db.query(models.Request.fault_type, func.count(models.Request.id).label('count')) \
+               .group_by(models.Request.fault_type).all()
+    return result
+
