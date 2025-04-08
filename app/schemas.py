@@ -20,3 +20,11 @@ class Request(RequestCreate):
 
     class Config:
         orm_mode = True
+
+class RequestUpdate(BaseModel):
+    status: StatusEnum | None = None  
+    problem_description: str | None = None  
+    responsible: str | None = None  
+
+    class Config:
+        orm_mode = True  

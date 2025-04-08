@@ -17,3 +17,5 @@ class Request(Base):
     description = Column(String)
     client = Column(String)
     status = Column(Enum(StatusEnum))
+    problem_description = Column(String)
+    responsible = Column(String)
