@@ -1,12 +1,19 @@
-from fastapi import FastAPI, Depends, HTTPException
+from pickle import APPEND
+from fastapi import APIRouter, FastAPI, Depends, HTTPException
+from fastapi import security
 from sqlalchemy.orm import Session
+from datetime import timedelta
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from typing import Optional
 from typing import List
+from app.routers import tasks 
 from . import models, schemas, crud
 from .database import engine, SessionLocal
 
 models.Base.metadata.create_all(bind=engine)
-
 app = FastAPI()
+
+app.include_router(tasks.router)
 
 def get_db():
     db = SessionLocal()
@@ -89,3 +96,48 @@ def get_average_completion_time(db: Session = Depends(get_db)):
 def get_fault_type_statistics(db: Session = Depends(get_db)):
     statistics = crud.fault_type_statistics(db)
     return {"fault_type_statistics": statistics}
+
+router = APIRouter()
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+# регестрация енового пользователя 
+@router.post("/register", response_model=schemas.User)
+def register_user(user: schemas.UserCreate, db: Session = Depends(SessionLocal)):
+    hashed_password = security.hash_password(user.password)
+    db_user = models.User(username=user.username, hashed_password=hashed_password, role="user")
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+# логин 
+@router.post("/token", response_model=schemas.Token)
+def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(SessionLocal)):
+    db_user = crud.get_user_by_username(db, username=form_data.username)
+    if not db_user or not security.verify_password(form_data.password, db_user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    access_token = security.create_access_token(data={"sub": db_user.username})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    payload = security.verify_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return payload
+
+def get_current_admin_user(current_user: dict = Depends(get_current_user)):
+    if current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    return current_user
+
+# ограничения для разных пользователй 
+@router.get("/admin-only", dependencies=[Depends(get_current_admin_user)])
+def admin_only_route():
+    return {"message": "Welcome, admin!"}
+
+@router.get("/user-only")
+def user_only_route(current_user: dict = Depends(get_current_user)):
+    return {"message": f"Welcome, {current_user['sub']}!"}
