@@ -24,7 +24,7 @@ def read_requests(db: Session = Depends(get_db)):
     return crud.get_requests(db)
 
 @app.put("/requests/{request_id}/status", response_model=schemas.RequestUpdate)
-def update_status(request_id: int, status: schemas.Status, db: Session = Depends(get_db)):
+def update_status(request_id: int, status: schemas.StatusEnum, db: Session = Depends(get_db)):
     db_request = crud.update_status(db=db, request_id=request_id, status=status)
     if not db_request:
         raise HTTPException(status_code=404, detail="Request not found")
