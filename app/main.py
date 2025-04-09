@@ -15,6 +15,10 @@ def get_db():
     finally:
         db.close()
 
+@app.get("/")
+def read_root():
+    return {"message": "Hello, World!"}
+
 @app.post("/requests/", response_model=schemas.Request)
 def create_request(request: schemas.RequestCreate, db: Session = Depends(get_db)):
     return crud.create_request(db, request)
